@@ -37,13 +37,13 @@ test.describe('SauceDemo automatization', () => {
     await sauceDemo.addSauceLabsBikeLightToCart();
 
     // Open Cart
-      await sauceDemo.openShoppingCart();
+    await sauceDemo.openShoppingCart();
 
     // Check if Bike Light is there
-      await sauceDemo.checkShoppingCartItem('Sauce Labs Bike Light');
+    await sauceDemo.checkShoppingCartItem('Sauce Labs Bike Light');
 
   });
-  
+
   test('3rd test -- Proceed to checkout and verify the order was completed', async ({ page }) => {
     const sauceDemo = new SauceDemo(page);
 
@@ -51,10 +51,10 @@ test.describe('SauceDemo automatization', () => {
     await sauceDemo.addSauceLabsBikeLightToCart();
 
     // Open Cart
-      await sauceDemo.openShoppingCart();
+    await sauceDemo.openShoppingCart();
 
     // Check if Bike Light is there
-      await sauceDemo.checkShoppingCartItem('Sauce Labs Bike Light');
+    await sauceDemo.checkShoppingCartItem('Sauce Labs Bike Light');
 
     // Proceed to checkout
     await sauceDemo.clickCheckoutButton();
@@ -70,7 +70,7 @@ test.describe('SauceDemo automatization', () => {
 
   });
 
-  test('4th test -- Order items by price and validate it', async ({page }) => {
+  test('4th test -- Order items by price and validate it', async ({ page }) => {
     const sauceDemo = new SauceDemo(page);
 
     // Filter the page
@@ -80,12 +80,69 @@ test.describe('SauceDemo automatization', () => {
     const pricesUI = await sauceDemo.getInventoryPrices();
 
     // Creating a new, independent and ordered array containing the numbers collected previouly
-    const expectedOrder = [...pricesUI].sort((a,b) => a-b);
+    const expectedOrder = [...pricesUI].sort((a, b) => a - b);
 
     // Check if the returned order (priceUI) matches the template (expectedOrder)
     expect(pricesUI).toEqual(expectedOrder);
 
   });
 
+});
+
+test.describe('Mobile Responsiveness', () => {
+  // Forcing this block run as an iPhone 12
+  test.use({
+    viewport: { width: 390, height: 844 },
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X)...'
+  });
+
+  test.beforeEach(async ({ page }) => {
+    const sauceDemo = new SauceDemo(page);
+    // Go to Home page directly
+    await sauceDemo.navigate('https://www.saucedemo.com/inventory.html');
+  });
+
+  test('5th test -- Check burger menu on mobile', async ({ page }) => {
+    // Check burger menu exhibition
+    await expect(page.locator('#react-burger-menu-btn')).toBeVisible();
+  });
+
+  test ('6th test -- Logout using burger menu', async ({page}) => {
+
+    // Click burger menu
+    await page.locator('#react-burger-menu-btn').click();
+    
+    // Click Logout button
+    await page.locator('#logout_sidebar_link').click();
+    
+    // Check if sign in screen is shown -- check Login button existency
+    await expect(page.locator('#login-button')).toBeVisible();
+
+  });
+
+  test('7th test -- Checkout on mobile version', async ({page}) => {
+    const sauceDemo = new SauceDemo(page);
+
+    // Add "Sauce Labs Bike Light" to the cart
+    await sauceDemo.addSauceLabsBikeLightToCart();
+
+    // Open Cart
+    await sauceDemo.openShoppingCart();
+
+    // Check if Bike Light is there
+    await sauceDemo.checkShoppingCartItem('Sauce Labs Bike Light');
+
+    // Proceed to checkout
+    await sauceDemo.clickCheckoutButton();
+
+    // Fill checkout form
+    await sauceDemo.fillCheckoutData('Gustavo', 'Mesquita', '37191018');
+
+    // Finish
+    await sauceDemo.clickFinishButton();
+
+    // Check success
+    await sauceDemo.checkOrderSuccess();
+  })
 
 });
