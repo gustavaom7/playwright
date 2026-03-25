@@ -13,6 +13,7 @@ export class SauceDemo extends BasePage {
   readonly zipCodeField: Locator;
   readonly FinishButton: Locator;
   readonly continueButton: Locator;
+  readonly sortButton: Locator;
   
     // Map selectors
   constructor(page: Page) {
@@ -28,9 +29,10 @@ export class SauceDemo extends BasePage {
     this.zipCodeField = page.locator('[data-test="postalCode"]');
     this.FinishButton = page.locator('[data-test="finish"]');
     this.continueButton = page.locator('[data-test="continue"]');
+    this.sortButton = page.locator('[data-test="product-sort-container"]');
   }
 
-  // Function
+  // Functions
   async signIn(username: string, password:string) {
     await this.page.getByPlaceholder('Username').fill(username);
     await this.page.getByPlaceholder('Password').fill(password);
@@ -41,7 +43,7 @@ export class SauceDemo extends BasePage {
   }
   
 
-    async checkErrorMessage(){
+  async checkErrorMessage(){
         await expect(this.ErrorMessageElement).toBeVisible();
   }
 
@@ -66,7 +68,6 @@ export class SauceDemo extends BasePage {
     await this.lastNameField.fill(lastName);
     await this.zipCodeField.fill(zipCode);
 
-    //Click Continue button
     await this.continueButton.click();
   }
 
@@ -77,5 +78,20 @@ export class SauceDemo extends BasePage {
   async checkOrderSuccess(){
     await expect(this.page.locator('[data-test="complete-header"]')).toContainText('Thank you for your order!')
   }
+
+  async filterByPriceLowToHigh() {
+    // .selectOption() command interacts with type <select> elements
+  await this.page.locator('[data-test="product-sort-container"]').selectOption('lohi');
+}
+
+  async getInventoryPrices() {
+  // Get text from all prices
+  const priceStrings = await this.page.locator('.inventory_item_price').allTextContents();
+  
+  // Convert string array in numbers
+  return priceStrings.map(priceStrings => {
+    return parseFloat(priceStrings.replace('$', ''));
+  });
+}
 
 }
