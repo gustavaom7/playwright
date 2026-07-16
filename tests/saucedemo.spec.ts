@@ -1,83 +1,75 @@
-import { test, expect } from '@playwright/test';
-import { SauceDemo } from '../pages/SauceDemo';
+import { devices } from '@playwright/test';
+import { test, expect } from '../fixtures/pages.fixture';
+import { users, items, checkoutInfo } from '../fixtures/test-data';
 
 test.describe('SauceDemo automatization', () => {
 
-  test.beforeEach(async ({ page }) => {
-    const sauceDemo = new SauceDemo(page);
+  test.beforeEach(async ({ inventoryPage }) => {
     // Go to Home page directly
-    await sauceDemo.navigate('https://www.saucedemo.com/inventory.html');
+    await inventoryPage.navigate('/inventory.html');
   });
 
-  test('1st test -- Attempt to sign in with username locked_out_user and verify the correct error message is displayed', async ({ page }) => {
-    const sauceDemo = new SauceDemo(page);
-
+  test('1st test -- Attempt to sign in with username locked_out_user and verify the correct error message is displayed', async ({ page, loginPage }) => {
     // Clearing cookies -- otherwise, the page is automatically signed in
     await page.context().clearCookies();
     await page.evaluate(() => localStorage.clear());
 
     // Access Website
-    await sauceDemo.navigate('https://www.saucedemo.com/inventory.html');
+    await loginPage.navigate('/inventory.html');
 
     // Insert credentials
-    await sauceDemo.signIn('locked_out_user', 'secret_sauce');
+    await loginPage.signIn(users.lockedOut.username, users.lockedOut.password);
 
     // Click Login button
-    await sauceDemo.clickLoginButton();
+    await loginPage.clickLoginButton();
 
     // Check error message
-    await sauceDemo.checkErrorMessage();
+    await loginPage.checkErrorMessage();
 
   });
 
-  test('2nd test -- Search for "Sauce Labs Bike Light" and add it to the cart; verify it appears in the cart with the correct name', async ({ page }) => {
-    const sauceDemo = new SauceDemo(page);
-
+  test('2nd test -- Search for "Sauce Labs Bike Light" and add it to the cart; verify it appears in the cart with the correct name', async ({ inventoryPage, cartPage }) => {
     // Add "Sauce Labs Bike Light" to the cart
-    await sauceDemo.addSauceLabsBikeLightToCart();
+    await inventoryPage.addItemToCart(items.bikeLight);
 
     // Open Cart
-    await sauceDemo.openShoppingCart();
+    await inventoryPage.openCart();
 
     // Check if Bike Light is there
-    await sauceDemo.checkShoppingCartItem('Sauce Labs Bike Light');
+    await cartPage.checkItemInCart(items.bikeLight);
 
   });
 
-  test('3rd test -- Proceed to checkout and verify the order was completed', async ({ page }) => {
-    const sauceDemo = new SauceDemo(page);
-
+  test('3rd test -- Proceed to checkout and verify the order was completed', async ({ inventoryPage, cartPage, checkoutPage }) => {
     // Add "Sauce Labs Bike Light" to the cart
-    await sauceDemo.addSauceLabsBikeLightToCart();
+    await inventoryPage.addItemToCart(items.bikeLight);
 
     // Open Cart
-    await sauceDemo.openShoppingCart();
+    await inventoryPage.openCart();
 
     // Check if Bike Light is there
-    await sauceDemo.checkShoppingCartItem('Sauce Labs Bike Light');
+    await cartPage.checkItemInCart(items.bikeLight);
 
     // Proceed to checkout
-    await sauceDemo.clickCheckoutButton();
+    await cartPage.proceedToCheckout();
 
     // Fill checkout form
-    await sauceDemo.fillCheckoutData('Gustavo', 'Mesquita', '37191018');
+    await checkoutPage.fillCheckoutInfo(checkoutInfo.firstName, checkoutInfo.lastName, checkoutInfo.zipCode);
 
     // Finish
-    await sauceDemo.clickFinishButton();
+    await checkoutPage.clickFinishButton();
 
     // Check success
-    await sauceDemo.checkOrderSuccess();
+    await checkoutPage.checkOrderSuccess();
 
   });
 
-  test('4th test -- Order items by price and validate it', async ({ page }) => {
-    const sauceDemo = new SauceDemo(page);
-
+  test('4th test -- Order items by price and validate it', async ({ inventoryPage }) => {
     // Filter the page
-    await sauceDemo.filterByPriceLowToHigh();
+    await inventoryPage.filterByPriceLowToHigh();
 
     // Get the prices shown and store it into a variable
-    const pricesUI = await sauceDemo.getInventoryPrices();
+    const pricesUI = await inventoryPage.getInventoryPrices();
 
     // Creating a new, independent and ordered array containing the numbers collected previouly
     const expectedOrder = [...pricesUI].sort((a, b) => a - b);
@@ -91,58 +83,50 @@ test.describe('SauceDemo automatization', () => {
 
 test.describe('Mobile Responsiveness', () => {
   // Forcing this block run as an iPhone 12
-  test.use({
-    viewport: { width: 390, height: 844 },
-    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X)...'
-  });
+  // (defaultBrowserType is omitted so the block keeps running on the chromium project)
+  const { defaultBrowserType, ...iPhone12 } = devices['iPhone 12'];
+  test.use({ ...iPhone12 });
 
-  test.beforeEach(async ({ page }) => {
-    const sauceDemo = new SauceDemo(page);
+  test.beforeEach(async ({ inventoryPage }) => {
     // Go to Home page directly
-    await sauceDemo.navigate('https://www.saucedemo.com/inventory.html');
+    await inventoryPage.navigate('/inventory.html');
   });
 
-  test('5th test -- Check burger menu on mobile', async ({ page }) => {
+  test('5th test -- Check burger menu on mobile', async ({ inventoryPage }) => {
     // Check burger menu exhibition
-    await expect(page.locator('#react-burger-menu-btn')).toBeVisible();
+    await expect(inventoryPage.burgerMenuButton).toBeVisible();
   });
 
-  test ('6th test -- Logout using burger menu', async ({page}) => {
+  test ('6th test -- Logout using burger menu', async ({ inventoryPage, loginPage }) => {
+    // Open burger menu and log out
+    await inventoryPage.logout();
 
-    // Click burger menu
-    await page.locator('#react-burger-menu-btn').click();
-    
-    // Click Logout button
-    await page.locator('#logout_sidebar_link').click();
-    
     // Check if sign in screen is shown -- check Login button existency
-    await expect(page.locator('#login-button')).toBeVisible();
+    await loginPage.checkLoginButtonVisible();
 
   });
 
-  test('7th test -- Checkout on mobile version', async ({page}) => {
-    const sauceDemo = new SauceDemo(page);
-
+  test('7th test -- Checkout on mobile version', async ({ inventoryPage, cartPage, checkoutPage }) => {
     // Add "Sauce Labs Bike Light" to the cart
-    await sauceDemo.addSauceLabsBikeLightToCart();
+    await inventoryPage.addItemToCart(items.bikeLight);
 
     // Open Cart
-    await sauceDemo.openShoppingCart();
+    await inventoryPage.openCart();
 
     // Check if Bike Light is there
-    await sauceDemo.checkShoppingCartItem('Sauce Labs Bike Light');
+    await cartPage.checkItemInCart(items.bikeLight);
 
     // Proceed to checkout
-    await sauceDemo.clickCheckoutButton();
+    await cartPage.proceedToCheckout();
 
     // Fill checkout form
-    await sauceDemo.fillCheckoutData('Gustavo', 'Mesquita', '37191018');
+    await checkoutPage.fillCheckoutInfo(checkoutInfo.firstName, checkoutInfo.lastName, checkoutInfo.zipCode);
 
     // Finish
-    await sauceDemo.clickFinishButton();
+    await checkoutPage.clickFinishButton();
 
     // Check success
-    await sauceDemo.checkOrderSuccess();
+    await checkoutPage.checkOrderSuccess();
   })
 
 });
