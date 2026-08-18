@@ -9,6 +9,7 @@ export const users = {
 
 export const items = {
   bikeLight: 'Sauce Labs Bike Light',
+  backpack: 'Sauce Labs Backpack',
 } as const;
 
 export const checkoutInfo = {

@@ -116,6 +116,59 @@ test.describe('SauceDemo automatization', () => {
     await expect(inventoryPage.sortDropdown).toBeVisible();
   });
 
+  test('Remove an item from the cart and continue shopping', async ({ inventoryPage, cartPage }) => {
+    // Add two items so removing one still leaves the cart non-empty
+    await inventoryPage.addItemToCart(items.bikeLight);
+    await inventoryPage.addItemToCart(items.backpack);
+    await inventoryPage.openCart();
+
+    // Remove one item and verify only the other remains
+    await cartPage.removeItemFromCart(items.bikeLight);
+    await expect(cartPage.itemNames).toHaveText([items.backpack]);
+    await expect(inventoryPage.cartBadge).toHaveText('1');
+
+    // "Continue Shopping" takes us back to the inventory page
+    await cartPage.continueShopping();
+    await expect(inventoryPage.sortDropdown).toBeVisible();
+  });
+
+  test('Checkout with multiple items shows the correct total, and cancelling preserves the cart', async ({ page, inventoryPage, cartPage, checkoutPage }) => {
+    // Add two items and reach the checkout overview step
+    await inventoryPage.addItemToCart(items.bikeLight);
+    await inventoryPage.addItemToCart(items.backpack);
+    await inventoryPage.openCart();
+    await cartPage.proceedToCheckout();
+    await checkoutPage.fillCheckoutInfo(checkoutInfo.firstName, checkoutInfo.lastName, checkoutInfo.zipCode);
+
+    // Total should equal item total + tax
+    const itemTotal = await checkoutPage.getItemTotal();
+    const tax = await checkoutPage.getTax();
+    const total = await checkoutPage.getTotal();
+    expect(total).toBeCloseTo(itemTotal + tax, 2);
+
+    // Cancelling from the overview step drops the order but keeps the cart intact
+    await checkoutPage.clickCancelButton();
+    await expect(page).toHaveURL('/inventory.html');
+    await expect(inventoryPage.cartBadge).toHaveText('2');
+  });
+
+  test('Reset App State clears the cart badge, and All Items returns to the inventory listing', async ({ inventoryPage }) => {
+    // Add an item so the cart badge is visible
+    await inventoryPage.addItemToCart(items.bikeLight);
+    await expect(inventoryPage.cartBadge).toHaveText('1');
+
+    // Reset App State clears the cart
+    await inventoryPage.openBurgerMenu();
+    await inventoryPage.resetAppState();
+    await expect(inventoryPage.cartBadge).toBeHidden();
+
+    // Navigate away, then use the burger menu's "All Items" link to come back
+    await inventoryPage.openItemDetails(items.backpack);
+    await inventoryPage.openBurgerMenu();
+    await inventoryPage.goToAllItems();
+    await expect(inventoryPage.sortDropdown).toBeVisible();
+  });
+
 });
 
 test.describe('Mobile Responsiveness', () => {

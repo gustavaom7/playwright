@@ -10,6 +10,8 @@ export class InventoryPage extends BasePage {
   readonly cartIcon: Locator;
   readonly burgerMenuButton: Locator;
   readonly logoutSidebarLink: Locator;
+  readonly allItemsSidebarLink: Locator;
+  readonly resetAppStateSidebarLink: Locator;
   readonly productImages: Locator;
   readonly cartBadge: Locator;
 
@@ -19,6 +21,8 @@ export class InventoryPage extends BasePage {
     this.cartIcon = page.locator('[data-test="shopping-cart-link"]');
     this.burgerMenuButton = page.locator('#react-burger-menu-btn');
     this.logoutSidebarLink = page.locator('#logout_sidebar_link');
+    this.allItemsSidebarLink = page.locator('[data-test="inventory-sidebar-link"]');
+    this.resetAppStateSidebarLink = page.locator('[data-test="reset-sidebar-link"]');
     this.productImages = page.locator('.inventory_item_img img');
     this.cartBadge = page.locator('[data-test="shopping-cart-badge"]');
   }
@@ -72,5 +76,13 @@ export class InventoryPage extends BasePage {
   async logout() {
     await this.openBurgerMenu();
     await this.logoutSidebarLink.click();
+  }
+
+  async goToAllItems() {
+    await this.allItemsSidebarLink.click();
+  }
+
+  async resetAppState() {
+    await this.resetAppStateSidebarLink.click();
   }
 }
