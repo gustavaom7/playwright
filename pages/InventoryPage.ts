@@ -1,7 +1,7 @@
 import { Locator, Page } from '@playwright/test';
 import { BasePage } from './base';
 
-function slugifyItemName(itemName: string): string {
+export function slugifyItemName(itemName: string): string {
   return itemName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
@@ -35,14 +35,30 @@ export class InventoryPage extends BasePage {
     await this.cartIcon.click();
   }
 
+  async openItemDetails(itemName: string) {
+    await this.page.getByText(itemName, { exact: true }).click();
+  }
+
   async filterByPriceLowToHigh() {
     // .selectOption() interacts with type <select> elements
     await this.sortDropdown.selectOption('lohi');
   }
 
+  async filterByNameAZ() {
+    await this.sortDropdown.selectOption('az');
+  }
+
+  async filterByNameZA() {
+    await this.sortDropdown.selectOption('za');
+  }
+
   async getInventoryPrices(): Promise<number[]> {
     const priceStrings = await this.page.locator('.inventory_item_price').allTextContents();
     return priceStrings.map(price => parseFloat(price.replace('$', '')));
+  }
+
+  async getInventoryNames(): Promise<string[]> {
+    return this.page.locator('.inventory_item_name').allTextContents();
   }
 
   async getProductImageSources(): Promise<(string | null)[]> {

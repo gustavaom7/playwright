@@ -79,6 +79,43 @@ test.describe('SauceDemo automatization', () => {
 
   });
 
+  test('Order items by name and validate both directions (A-Z and Z-A)', async ({ inventoryPage }) => {
+    // Sort A-Z and validate
+    await inventoryPage.filterByNameAZ();
+    const namesAZ = await inventoryPage.getInventoryNames();
+    const expectedAZ = [...namesAZ].sort((a, b) => a.localeCompare(b));
+    expect(namesAZ).toEqual(expectedAZ);
+
+    // Switch to Z-A and validate
+    await inventoryPage.filterByNameZA();
+    const namesZA = await inventoryPage.getInventoryNames();
+    const expectedZA = [...expectedAZ].reverse();
+    expect(namesZA).toEqual(expectedZA);
+  });
+
+  test('Open item detail page, validate its data and add to cart from there', async ({ inventoryPage, itemDetailPage }) => {
+    // Capture the price shown on the listing before navigating away
+    const listingPrices = await inventoryPage.getInventoryPrices();
+    const listingNames = await inventoryPage.getInventoryNames();
+    const bikeLightIndex = listingNames.indexOf(items.bikeLight);
+
+    // Open the detail page for "Sauce Labs Bike Light"
+    await inventoryPage.openItemDetails(items.bikeLight);
+
+    // Validate name and price match what was shown on the listing
+    await expect(itemDetailPage.itemName).toHaveText(items.bikeLight);
+    const detailPrice = await itemDetailPage.getPrice();
+    expect(detailPrice).toEqual(listingPrices[bikeLightIndex]);
+
+    // Add to cart from the detail page and check the cart badge updates
+    await itemDetailPage.addToCart();
+    await expect(inventoryPage.cartBadge).toHaveText('1');
+
+    // Go back to the listing
+    await itemDetailPage.goBackToProducts();
+    await expect(inventoryPage.sortDropdown).toBeVisible();
+  });
+
 });
 
 test.describe('Mobile Responsiveness', () => {
