@@ -12,7 +12,7 @@ export class LoginPage extends BasePage {
     this.usernameField = page.getByPlaceholder('Username');
     this.passwordField = page.getByPlaceholder('Password');
     this.loginButton = page.locator('[data-test="login-button"]');
-    this.errorMessage = page.getByText('Epic sadface: Sorry, this user has been locked out.');
+    this.errorMessage = page.locator('[data-test="error"]');
   }
 
   async signIn(username: string, password: string) {
@@ -24,8 +24,8 @@ export class LoginPage extends BasePage {
     await this.loginButton.click();
   }
 
-  async checkErrorMessage() {
-    await expect(this.errorMessage).toBeVisible();
+  async checkErrorMessage(expectedText: string) {
+    await expect(this.errorMessage).toContainText(expectedText);
   }
 
   async checkLoginButtonVisible() {

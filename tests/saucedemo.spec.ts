@@ -24,7 +24,7 @@ test.describe('SauceDemo automatization', () => {
     await loginPage.clickLoginButton();
 
     // Check error message
-    await loginPage.checkErrorMessage();
+    await loginPage.checkErrorMessage('Epic sadface: Sorry, this user has been locked out.');
 
   });
 
@@ -167,6 +167,45 @@ test.describe('SauceDemo automatization', () => {
     await inventoryPage.openBurgerMenu();
     await inventoryPage.goToAllItems();
     await expect(inventoryPage.sortDropdown).toBeVisible();
+  });
+
+  test('Login reports wrong password, then missing username, then missing password', async ({ page, loginPage }) => {
+    // Clearing cookies -- otherwise, the page is automatically signed in
+    await page.context().clearCookies();
+    await page.evaluate(() => localStorage.clear());
+    await loginPage.navigate('/inventory.html');
+
+    // Wrong password for a valid username
+    await loginPage.signIn(users.standard.username, 'wrong_password');
+    await loginPage.clickLoginButton();
+    await loginPage.checkErrorMessage('Epic sadface: Username and password do not match any user in this service');
+
+    // Empty username
+    await loginPage.signIn('', '');
+    await loginPage.clickLoginButton();
+    await loginPage.checkErrorMessage('Epic sadface: Username is required');
+
+    // Username filled, empty password
+    await loginPage.signIn(users.standard.username, '');
+    await loginPage.clickLoginButton();
+    await loginPage.checkErrorMessage('Epic sadface: Password is required');
+  });
+
+  test('Checkout reports missing Last Name, then missing Zip Code, in order', async ({ inventoryPage, cartPage, checkoutPage }) => {
+    // Add an item so we can reach the checkout page
+    await inventoryPage.addItemToCart(items.bikeLight);
+    await inventoryPage.openCart();
+    await cartPage.proceedToCheckout();
+
+    // First Name filled, Last Name missing
+    await checkoutPage.firstNameField.fill(checkoutInfo.firstName);
+    await checkoutPage.continueButton.click();
+    await checkoutPage.checkErrorMessage('Error: Last Name is required');
+
+    // Last Name filled, Zip Code still missing
+    await checkoutPage.lastNameField.fill(checkoutInfo.lastName);
+    await checkoutPage.continueButton.click();
+    await checkoutPage.checkErrorMessage('Error: Postal Code is required');
   });
 
 });
