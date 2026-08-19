@@ -43,12 +43,30 @@ export default defineConfig({
     // 2. Projeto de Teste (SÓ roda os arquivos .spec.ts)
     {
       name: 'chromium',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json', 
+        storageState: 'playwright/.auth/user.json',
       },
       dependencies: ['setup'], // Aqui diz que o 'setup' é pré-requisito
       testMatch: /.*\.spec\.ts/, // Garante que não vai rodar o setup aqui dentro de novo
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        storageState: 'playwright/.auth/user.json',
+      },
+      dependencies: ['setup'],
+      testMatch: /.*\.spec\.ts/,
+    },
+    {
+      name: 'webkit',
+      use: {
+        ...devices['Desktop Safari'],
+        storageState: 'playwright/.auth/user.json',
+      },
+      dependencies: ['setup'],
+      testMatch: /.*\.spec\.ts/,
     },
     /* Test against mobile viewports. */
     // {
