@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/pages.fixture';
-import { users, items } from '../fixtures/test-data';
+import { users, items, checkoutInfo } from '../fixtures/test-data';
 
 test.describe('SauceDemo automatization pt2', () => {
 
@@ -102,6 +102,53 @@ test.describe('SauceDemo automatization pt2', () => {
     // it's clearly off, not the exact buggy coordinates, to avoid a brittle pixel match.
     const cartIconBox = await inventoryPage.cartIcon.boundingBox();
     expect(cartIconBox?.x).toBeLessThan(1150);
+  });
+
+  test('6th test -- problem_user can never complete checkout because Last Name never registers', async ({ page, loginPage, inventoryPage, cartPage, checkoutPage }) => {
+    // Clearing cookies -- otherwise, the page is automatically signed in as standard_user
+    await page.context().clearCookies();
+    await page.evaluate(() => localStorage.clear());
+
+    // Access Website
+    await loginPage.navigate('/inventory.html');
+
+    // Insert credentials
+    await loginPage.signIn(users.problem.username, users.problem.password);
+
+    // Click Login button
+    await loginPage.clickLoginButton();
+
+    await inventoryPage.addItemToCart(items.bikeLight);
+    await inventoryPage.openCart();
+    await cartPage.proceedToCheckout();
+
+    // Known problem_user bug: the Last Name field silently ignores keystrokes,
+    // so Continue always reports it missing even though we filled it in.
+    await checkoutPage.fillCheckoutInfo(checkoutInfo.firstName, checkoutInfo.lastName, checkoutInfo.zipCode);
+    await checkoutPage.checkErrorMessage('Error: Last Name is required');
+  });
+
+  test('7th test -- error_user: changing the sort order does not actually reorder the products', async ({ page, loginPage, inventoryPage }) => {
+    // Clearing cookies -- otherwise, the page is automatically signed in as standard_user
+    await page.context().clearCookies();
+    await page.evaluate(() => localStorage.clear());
+
+    // Access Website
+    await loginPage.navigate('/inventory.html');
+
+    // Insert credentials
+    await loginPage.signIn(users.error.username, users.error.password);
+
+    // Click Login button
+    await loginPage.clickLoginButton();
+
+    const namesBefore = await inventoryPage.getInventoryNames();
+    await inventoryPage.filterByNameZA();
+
+    // Known error_user bug: the sort dropdown changes selection, but the
+    // underlying product list order never actually updates.
+    const namesAfter = await inventoryPage.getInventoryNames();
+    expect(namesAfter).toEqual(namesBefore);
   });
 
 });
