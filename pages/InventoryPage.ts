@@ -12,6 +12,10 @@ export class InventoryPage extends BasePage {
   readonly logoutSidebarLink: Locator;
   readonly allItemsSidebarLink: Locator;
   readonly resetAppStateSidebarLink: Locator;
+  readonly aboutSidebarLink: Locator;
+  readonly twitterLink: Locator;
+  readonly facebookLink: Locator;
+  readonly linkedinLink: Locator;
   readonly productImages: Locator;
   readonly cartBadge: Locator;
 
@@ -23,6 +27,10 @@ export class InventoryPage extends BasePage {
     this.logoutSidebarLink = page.locator('#logout_sidebar_link');
     this.allItemsSidebarLink = page.locator('[data-test="inventory-sidebar-link"]');
     this.resetAppStateSidebarLink = page.locator('[data-test="reset-sidebar-link"]');
+    this.aboutSidebarLink = page.locator('[data-test="about-sidebar-link"]');
+    this.twitterLink = page.locator('[data-test="social-twitter"]');
+    this.facebookLink = page.locator('[data-test="social-facebook"]');
+    this.linkedinLink = page.locator('[data-test="social-linkedin"]');
     this.productImages = page.locator('.inventory_item_img img');
     this.cartBadge = page.locator('[data-test="shopping-cart-badge"]');
   }

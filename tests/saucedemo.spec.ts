@@ -208,6 +208,18 @@ test.describe('SauceDemo automatization', () => {
     await checkoutPage.checkErrorMessage('Error: Postal Code is required');
   });
 
+  test('About link and footer social links point to the correct destinations', async ({ inventoryPage }) => {
+    // "About" in the burger menu points to the Sauce Labs site
+    await inventoryPage.openBurgerMenu();
+    await expect(inventoryPage.aboutSidebarLink).toHaveAttribute('href', 'https://saucelabs.com/');
+
+    // Footer social links point to the right profiles (checked via href, not by
+    // actually navigating -- these open in a new tab and are outside our control)
+    await expect(inventoryPage.twitterLink).toHaveAttribute('href', 'https://twitter.com/saucelabs');
+    await expect(inventoryPage.facebookLink).toHaveAttribute('href', 'https://www.facebook.com/saucelabs');
+    await expect(inventoryPage.linkedinLink).toHaveAttribute('href', 'https://www.linkedin.com/company/sauce-labs/');
+  });
+
 });
 
 test.describe('Mobile Responsiveness', () => {
