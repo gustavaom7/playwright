@@ -1,50 +1,106 @@
-# Architecture Model using Playwright and MCP
+# 🧪 Advanced Quality Architecture - Playwright & MCP
 
-[![Playwright Tests](https://github.com/gustavaom7/playwright/actions/workflows/playwright.yml/badge.svg?branch=main)](https://github.com/gustavaom7/playwright/actions/workflows/playwright.yml)
+![Playwright Tests](https://github.com/gustavaom7/playwright/actions/workflows/playwright.yml/badge.svg?branch=main)
+[![Quality](https://img.shields.io/badge/Quality-Assurance-orange)](https://github.com/gustavaom7/playwright)
+[![MCP](https://img.shields.io/badge/MCP-Playwright-blueviolet)](https://github.com/gustavaom7/playwright/blob/main/.mcp.json)
 
-Playwright + TypeScript end-to-end test suite exercising the public demo site [saucedemo.com](https://www.saucedemo.com/). There is no application source code here — this repo only contains tests, page objects, and the tooling around them.
+Professional E2E automation suite developed with **Playwright** and **TypeScript** against [saucedemo.com](https://www.saucedemo.com/), extended with **Model Context Protocol (MCP)** integration for AI-assisted, locator-accurate test authoring.
 
-## Getting started
+---
 
-```bash
-npm install                          # install dependencies
-npx playwright install --with-deps   # install browsers (once, and in CI)
+## 🚀 Key Features & Engineering Patterns
 
-npx playwright test                  # run the full suite headless
-npx playwright test --headed         # run with a visible browser
-npx playwright test --ui             # Playwright's UI mode
-npx playwright test --project=chromium  # run a single browser project
+### 🖥️ UI Automation (E2E)
+* **Page Object Model (POM):** one class per screen (`LoginPage`, `InventoryPage`, `CartPage`, `CheckoutPage`, `ItemDetailPage`), all extending a shared `BasePage`.
+* **Session Reuse:** `auth.setup.ts` logs in once and persists storage state (`playwright/.auth/user.json`), so every spec starts pre-authenticated instead of repeating the UI login flow.
+* **Fixture-driven composition:** `pages.fixture.ts` extends Playwright's `test` with one fixture per page object; `test-data.ts` centralizes user accounts, products, and checkout data.
+* **Cross-browser coverage:** the full spec suite runs against **Chromium, Firefox, and WebKit**.
+* **Mobile emulation:** viewport/userAgent overrides emulate an iPhone 12 for responsive flows.
+* **Known-bug regression suite:** a dedicated `saucedemo-quirks.spec.ts` pins down real SauceDemo bugs tied to specific seeded users (`problem_user`, `error_user`, `performance_glitch_user`, `visual_user`).
 
-npm run lint                         # eslint
-npm run typecheck                    # tsc --noEmit
-npx playwright show-report           # open the last HTML report
+### 🤖 AI-Assisted Exploration (MCP)
+* **Model Context Protocol integration:** `.mcp.json` wires up the official `@playwright/mcp` server, giving an MCP-compatible client (e.g. Claude Code) live control of a real browser against saucedemo.com.
+* **Locator discovery workflow:** flows are explored interactively — navigating, taking accessibility snapshots, clicking/typing — to find the exact `[data-test="..."]` locator a new Page Object method should use, instead of guessing selectors blind.
+* **Human-in-the-loop authoring:** MCP drives discovery, not code generation — the resulting page-object methods and test code are still written deliberately from what the session reveals.
+
+### ⚙️ DevOps & CI/CD
+* **GitHub Actions:** lint, typecheck, and the full cross-browser regression suite run on every push/PR.
+* **Dependency caching:** Playwright browser binaries are cached by version to speed up runs.
+* **Automated Reporting:** HTML report uploaded as a build artifact on every run, even on failure.
+
+---
+
+## 🏗️ Project Structure
+
+```text
+playwright/
+├── .github/workflows/        # CI/CD pipeline (playwright.yml)
+├── .mcp.json                 # Playwright MCP server config
+├── pages/                    # Page Object Model
+│   ├── base.ts                  # Shared navigate() helper
+│   ├── LoginPage.ts
+│   ├── InventoryPage.ts
+│   ├── CartPage.ts
+│   ├── CheckoutPage.ts
+│   └── ItemDetailPage.ts
+├── fixtures/
+│   ├── pages.fixture.ts      # Injects page objects as Playwright fixtures
+│   └── test-data.ts          # Shared users, products, checkout data
+├── tests/
+│   ├── auth.setup.ts             # Logs in once, persists storage state
+│   ├── saucedemo.spec.ts         # Core + mobile E2E flows
+│   └── saucedemo-quirks.spec.ts  # Known SauceDemo bugs per seeded user
+├── utils/                     # Reserved for shared helpers
+├── playwright.config.ts       # Projects: setup -> chromium / firefox / webkit
+└── package.json                # Scripts and dependencies
 ```
 
-## Architecture
+## 🚦 Local Execution
 
-- **`playwright.config.ts`** defines a dependency chain of projects:
-  - `setup` — runs `*.setup.ts` files first.
-  - `chromium`, `firefox`, `webkit` — run `*.spec.ts` files, each depending on `setup` and starting from the storage state it produces (pre-authenticated).
-- **`tests/auth.setup.ts`** logs into SauceDemo as `standard_user` once and saves cookies/localStorage to `playwright/.auth/user.json`, which every spec project reuses. Tests that need a logged-out state (e.g. `locked_out_user`) clear cookies/localStorage explicitly before navigating.
-- **`pages/`** — a Page Object Model, one class per screen, all extending `BasePage` (`pages/base.ts`) for a shared `navigate(url)` helper:
-  - `LoginPage`, `InventoryPage`, `CartPage`, `CheckoutPage`, `ItemDetailPage`.
-  - Locators prefer the site's `[data-test="..."]` attributes. New interactions belong in these classes, not inlined into specs.
-- **`fixtures/`**
-  - `pages.fixture.ts` — extends Playwright's `test` with one fixture per page object (`loginPage`, `inventoryPage`, `cartPage`, `checkoutPage`, `itemDetailPage`), so specs just destructure what they need.
-  - `test-data.ts` — shared constants: the six SauceDemo user accounts, product names, checkout form data.
-- **`utils/`** — currently empty, reserved for shared helpers.
+1. **Installation**
 
-## Tests
+```bash
+npm install
+npx playwright install --with-deps
+```
 
-- **`tests/saucedemo.spec.ts`** (16 tests) — standard desktop flows: login (success, locked-out, field validation), search/add-to-cart, checkout (happy path, multi-item totals, cancel, field validation), sorting (price and name, both directions), item detail page, removing cart items, Reset App State / All Items navigation, footer/About links, and logout — plus a `Mobile Responsiveness` block emulating an iPhone 12 for the burger menu, logout, and checkout.
-- **`tests/saucedemo-quirks.spec.ts`** (7 tests) — documents known SauceDemo bugs tied to specific seeded users: `problem_user` (broken product images, checkout Last Name never registers), `error_user` (removing a cart item silently fails, sort order doesn't actually change), `performance_glitch_user` (slow login), `visual_user` (misplaced cart icon).
+2. **Running Tests**
 
-All spec tests run against **Chromium, Firefox, and WebKit**.
+**Full suite, headless (all browsers):** `npx playwright test`
 
-## CI/CD
+**Headed mode:** `npx playwright test --headed`
 
-`.github/workflows/playwright.yml` runs on every push/PR to `main`/`master`: installs dependencies, lints, typechecks, installs (and caches) Playwright browsers, runs the full suite (`npm test`), and uploads the HTML report as a build artifact. The badge at the top of this file reflects the latest run on `main`.
+**Interactive UI mode:** `npx playwright test --ui`
 
-## MCP
+**Single browser:** `npx playwright test --project=chromium`
 
-`.mcp.json` configures the official `@playwright/mcp` server, giving an MCP-compatible client (e.g. Claude Code) live control of a real browser against saucedemo.com. It's used to explore the site interactively before writing code — navigating flows, taking accessibility snapshots, and clicking/typing to discover the `data-test` locators a new page-object method or spec should use. It doesn't generate test files by itself; the resulting code is still written by hand from what the session reveals. Session artifacts (snapshots, console logs) land in `.playwright-mcp/`, which is gitignored.
+**Single file:** `npx playwright test tests/saucedemo.spec.ts`
+
+**Lint:** `npm run lint`
+
+**Typecheck:** `npm run typecheck`
+
+**Open last HTML report:** `npx playwright show-report`
+
+3. **Exploring with MCP**
+
+`.mcp.json` already configures the `@playwright/mcp` server — any MCP-compatible client (Claude Code, etc.) can drive a live browser against saucedemo.com to explore flows and discover `data-test` locators before a test is ever written.
+
+## 📊 CI/CD Workflow
+
+The automation runs on **Ubuntu-latest** via **GitHub Actions**:
+
+**Trigger:** every push/PR to `main`/`master`.
+
+**Execution:** `npm ci` → lint → typecheck → install/cache Playwright browsers → `npm test` across Chromium, Firefox, and WebKit.
+
+**Artifacts:** uploads the Playwright HTML report for review, even if tests fail.
+
+## 👤 Author
+
+**Gustavo Mesquita** - QA Engineer
+
+- [LinkedIn](https://www.linkedin.com/in/qa-gustavo-mesquita/)
+- [GitHub](https://github.com/gustavaom7)
+
+_Developed with automation and AI-assisted exploration via MCP._
