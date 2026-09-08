@@ -1,4 +1,4 @@
-# interview-playwright-sandbox
+# Architecture Model using Playwright and MCP
 
 [![Playwright Tests](https://github.com/gustavaom7/playwright/actions/workflows/playwright.yml/badge.svg?branch=main)](https://github.com/gustavaom7/playwright/actions/workflows/playwright.yml)
 
