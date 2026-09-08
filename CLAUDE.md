@@ -26,6 +26,10 @@ npx playwright show-report        # open the last HTML report
 
 There is no lint, typecheck, or build script defined in `package.json` — `scripts` is empty.
 
+## MCP
+
+`.mcp.json` configures the official `@playwright/mcp` server (`npx @playwright/mcp@latest`), giving an MCP-compatible client (e.g. Claude Code) live control of a real browser against https://www.saucedemo.com/. It's used to explore the site interactively before writing code: navigating flows, taking accessibility snapshots, and clicking/typing to discover the `data-test` locators a new Page Object method or spec should use — the same locators the recorded actions resolve to (e.g. `page.locator('[data-test="login-button"]')`) are what end up hardcoded in `pages/*.ts`. It does not generate test files by itself; the resulting spec/page-object code is still written by hand from what the session reveals. Session artifacts (accessibility snapshots, console logs) are written to `.playwright-mcp/`, which is gitignored.
+
 ## Architecture
 
 - `playwright.config.ts` defines two projects with a dependency chain:

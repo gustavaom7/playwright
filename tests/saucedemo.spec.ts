@@ -220,6 +220,29 @@ test.describe('SauceDemo automatization', () => {
     await expect(inventoryPage.linkedinLink).toHaveAttribute('href', 'https://www.linkedin.com/company/sauce-labs/');
   });
 
+  test('Sign in with standard_user redirects to the inventory page', async ({ page, loginPage }) => {
+    // Clearing cookies -- otherwise, the page is automatically signed in
+    await page.context().clearCookies();
+    await page.evaluate(() => localStorage.clear());
+    await loginPage.navigate('/inventory.html');
+
+    // Insert credentials and log in
+    await loginPage.signIn(users.standard.username, users.standard.password);
+    await loginPage.clickLoginButton();
+
+    // Check we landed on the inventory page
+    await expect(page).toHaveURL(/inventory\.html/);
+  });
+
+  test('Logout returns the user to the login page', async ({ page, inventoryPage, loginPage }) => {
+    // Open burger menu and log out
+    await inventoryPage.logout();
+
+    // Check if sign in screen is shown -- check Login button existency
+    await loginPage.checkLoginButtonVisible();
+    await expect(page).toHaveURL('https://www.saucedemo.com/');
+  });
+
 });
 
 test.describe('Mobile Responsiveness', () => {
