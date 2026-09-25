@@ -1,0 +1,48 @@
+name: Visual Regression
+
+on:
+  workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: 'Update snapshots instead of comparing against them'
+        type: boolean
+        default: false
+
+concurrency:
+  group: visual-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Browsers (Chromium)
+        run: npx playwright install --with-deps chromium
+      - name: Run visual tests (compare against committed baseline)
+        if: ${{ !inputs.update_baselines }}
+        run: npx playwright test --project=chromium-auth -g "Visual regression"
+      - name: Run visual tests (update baseline, no comparison)
+        if: ${{ inputs.update_baselines }}
+        run: npx playwright test --project=chromium-auth -g "Visual regression" --update-snapshots
+      - name: Upload updated baseline images
+        if: ${{ inputs.update_baselines }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: tests/authenticated/visual-regression.spec.ts-snapshots/
+          retention-days: 7
+      - name: Upload HTML report
+        if: ${{ !cancelled() && !inputs.update_baselines }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-visual
+          path: playwright-report/
+          retention-days: 30
