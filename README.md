@@ -24,6 +24,7 @@ Professional E2E automation suite developed with **Playwright** and **TypeScript
 * **Accessibility (axe-core):** WCAG 2.x A/AA audit of login, login-error, inventory, cart and checkout. Full violation detail is attached to the report as JSON. Baseline is 0 violations, so the gate defaults to 0; relax it with `A11Y_MAX=<n>`.
 * **Data-driven scenarios:** invalid-credential, checkout-validation and sort-order cases are tables of data driving one test body each (7 login cases, 4 checkout cases, 4 sort orders).
 * **Performance budgets:** Navigation Timing of the inventory page against budgets named by intent (`utils/budgets.ts`), scalable with `TIMEOUT_FACTOR` for slower environments. Timings are attached to the report even when passing.
+* **Visual regression (Chromium only, baseline not yet enabled):** `tests/authenticated/visual-regression.spec.ts` uses Playwright's built-in `toHaveScreenshot()` — no external service, no account, no extra dependency — on 5 flows (inventory, sorted inventory, cart, checkout step one, checkout complete). See "Visual regression" under CI/CD Workflow for why the baseline isn't committed yet and how to turn it on.
 
 ### 🤖 AI-Assisted Exploration (MCP)
 * **Model Context Protocol integration:** `.mcp.json` wires up the official `@playwright/mcp` server, giving an MCP-compatible client (e.g. Claude Code) live control of a real browser against saucedemo.com.
@@ -43,29 +44,29 @@ Professional E2E automation suite developed with **Playwright** and **TypeScript
 
 ```text
 playwright/
-├── .github/workflows/        # CI/CD pipeline (playwright.yml)
-├── .mcp.json                 # Playwright MCP server config
-├── pages/                    # Page Object Model
-│   ├── base.ts                  # Shared navigate() helper
-│   ├── LoginPage.ts
-│   ├── InventoryPage.ts
-│   ├── CartPage.ts
-│   ├── CheckoutPage.ts
-│   └── ItemDetailPage.ts
+├── .github/workflows/ # CI/CD pipeline (playwright.yml, visual-regression.yml)
+├── .mcp.json # Playwright MCP server config
+├── pages/ # Page Object Model
+│ ├── base.ts # Shared navigate() helper
+│ ├── LoginPage.ts
+│ ├── InventoryPage.ts
+│ ├── CartPage.ts
+│ ├── CheckoutPage.ts
+│ └── ItemDetailPage.ts
 ├── fixtures/
-│   ├── pages.fixture.ts      # Injects page objects as Playwright fixtures
-│   └── test-data.ts          # Shared users, products, checkout data
+│ ├── pages.fixture.ts # Injects page objects as Playwright fixtures
+│ └── test-data.ts # Shared users, products, checkout data
 ├── tests/
-│   ├── auth.setup.ts             # Logs in once, persists storage state
-│   ├── public/                   # Anonymous: login, seeded-user bugs (quirks)
-│   ├── authenticated/            # Catalog, cart, checkout (shared session)
-│   ├── session/                  # Logout, runs after the authenticated projects
-│   └── mobile/                   # Pixel 5 / iPhone 12 flows
+│ ├── auth.setup.ts # Logs in once, persists storage state
+│ ├── public/ # Anonymous: login, seeded-user bugs (quirks)
+│ ├── authenticated/ # Catalog, cart, checkout, visual regression (shared session)
+│ ├── session/ # Logout, runs after the authenticated projects
+│ └── mobile/ # Pixel 5 / iPhone 12 flows
 ├── utils/
-│   ├── a11y.ts                  # axe audit helper (A11Y_MAX gate + JSON attachment)
-│   └── budgets.ts               # Performance budgets, scaled by TIMEOUT_FACTOR
-├── playwright.config.ts       # Projects: setup -> {browser}-public / -auth / -session, mobile-*
-└── package.json                # Scripts and dependencies
+│ ├── a11y.ts # axe audit helper (A11Y_MAX gate + JSON attachment)
+│ └── budgets.ts # Performance budgets, scaled by TIMEOUT_FACTOR
+├── playwright.config.ts # Projects: setup -> {browser}-public / -auth / -session, mobile-*
+└── package.json # Scripts and dependencies
 ```
 
 ## 🚦 Local Execution
@@ -87,7 +88,7 @@ npx playwright install --with-deps
 
 **Single project:** `npx playwright test --project=chromium-auth`
 
-**By tag:** `TAG=@smoke npx playwright test` (tags: `@smoke`, `@quirk`, `@slow`, `@network`, `@a11y`, `@perf`)
+**By tag:** `TAG=@smoke npx playwright test` (tags: `@smoke`, `@quirk`, `@slow`, `@network`, `@a11y`, `@perf`, `@visual`)
 
 **Skip slow tests:** `SEM_TAG=@slow npx playwright test`
 
@@ -113,6 +114,20 @@ The automation runs on **Ubuntu-latest** via **GitHub Actions**:
 
 **Artifacts:** uploads the Playwright HTML report for review, even if tests fail.
 
+### 🖼️ Visual regression
+
+`tests/authenticated/visual-regression.spec.ts` exists and is wired to run, but its baseline screenshots are **deliberately not committed yet**. Generating a first baseline without a human reviewing it would freeze whatever the page looks like today as "correct" — including any real bug already on the page. So right now:
+
+* `playwright.yml`'s push/PR step runs with `SEM_TAG='@visual'`, which excludes these tests from the badge you see above.
+* A separate workflow, `.github/workflows/visual-regression.yml`, is manual-only (`workflow_dispatch`) with an `update_baselines` checkbox.
+
+To turn visual regression on for real:
+
+1. Run the **Visual Regression** workflow from the Actions tab with `update_baselines` checked. It runs on the same `ubuntu-latest` runner as the rest of CI, which matters — screenshots taken on a local macOS/Windows machine render fonts differently and will not match what CI produces.
+2. Download the `visual-baselines` artifact from that run and look at every image. This step is the whole point — it's the human review that stops a bug from being baked in as "correct".
+3. Commit the reviewed PNGs to `tests/authenticated/visual-regression.spec.ts-snapshots/`.
+4. Remove the `SEM_TAG: '@visual'` block from `playwright.yml` so these tests join the regular push/PR run.
+
 ## 👤 Author
 
 **Gustavo Mesquita** - QA Engineer
@@ -133,4 +148,4 @@ _Developed with automation and AI-assisted exploration via MCP._
 * **`--grep` does not filter dependency projects.** Use the `TAG` / `SEM_TAG` environment variables.
 * **Firefox has no mobile emulation** (`isMobile` is unsupported), so mobile runs on Chromium (Pixel 5) and WebKit (iPhone 12).
 * **Quirk tests pass while the bug exists.** `tests/public/quirks.spec.ts` pins documented SauceDemo bugs; a failing quirk test means the site fixed something, not that the suite broke.
-* **Visual regression is not covered** — a baseline generated without review would freeze the current bugs as "correct".
+* **Visual regression has tests, but no reviewed baseline yet**, so it doesn't gate CI. See "Visual regression" above for exactly why and how to change that.
