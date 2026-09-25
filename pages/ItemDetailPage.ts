@@ -10,9 +10,11 @@ export class ItemDetailPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.itemName = page.locator('[data-test="inventory-item-name"]');
-    this.itemDesc = page.locator('[data-test="inventory-item-desc"]');
-    this.itemPrice = page.locator('[data-test="inventory-item-price"]');
+    // Scoped to the detail container for the same reason as CartPage.itemNames
+    const details = page.locator('.inventory_details_container');
+    this.itemName = details.locator('[data-test="inventory-item-name"]');
+    this.itemDesc = details.locator('[data-test="inventory-item-desc"]');
+    this.itemPrice = details.locator('[data-test="inventory-item-price"]');
     this.addToCartButton = page.locator('[data-test="add-to-cart"]');
     this.backButton = page.locator('[data-test="back-to-products"]');
   }

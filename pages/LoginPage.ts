@@ -20,6 +20,11 @@ export class LoginPage extends BasePage {
     await this.passwordField.fill(password);
   }
 
+  async login(user: { username: string; password: string }) {
+    await this.signIn(user.username, user.password);
+    await this.clickLoginButton();
+  }
+
   async clickLoginButton() {
     await this.loginButton.click();
   }

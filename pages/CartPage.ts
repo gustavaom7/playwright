@@ -9,7 +9,9 @@ export class CartPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.itemNames = page.locator('[data-test="inventory-item-name"]');
+    // Scoped to the cart list: the inventory page reuses the same data-test, and during the
+    // SPA route change an unscoped locator briefly matches all inventory items (strict mode error)
+    this.itemNames = page.locator('[data-test="cart-list"] [data-test="inventory-item-name"]');
     this.checkoutButton = page.locator('[data-test="checkout"]');
     this.continueShoppingButton = page.locator('[data-test="continue-shopping"]');
   }

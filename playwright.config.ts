@@ -1,98 +1,85 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+const AUTH_FILE = 'playwright/.auth/user.json';
 
 /**
- * See https://playwright.dev/docs/test-configuration.
+ * Tag filter, applied PER PROJECT. The CLI `--grep` does not apply to dependency projects,
+ * so asking for a tag would still drag the whole suite along. Use env vars instead:
+ *   TAG=@smoke npx playwright test          only tests tagged @smoke
+ *   SEM_TAG=@slow npx playwright test       everything except @slow
  */
+const byTag = {
+  ...(process.env.TAG ? { grep: new RegExp(process.env.TAG) } : {}),
+  ...(process.env.SEM_TAG ? { grepInvert: new RegExp(process.env.SEM_TAG) } : {}),
+};
+
+const desktopBrowsers = [
+  { name: 'chromium', device: devices['Desktop Chrome'] },
+  { name: 'firefox', device: devices['Desktop Firefox'] },
+  { name: 'webkit', device: devices['Desktop Safari'] },
+] as const;
+
+/**
+ * Per desktop browser, one project per nature of scenario:
+ *   <browser>-public   anonymous scenarios (login, seeded-user bugs); no session
+ *   <browser>-auth     reuse the saved standard_user session, run in parallel
+ *   <browser>-session  logout, which ends a session, so it runs after -auth has finished
+ */
+const desktopProjects = desktopBrowsers.flatMap(({ name, device }) => [
+  {
+    name: `${name}-public`,
+    testMatch: '**/public/**/*.spec.ts',
+    use: { ...device, storageState: { cookies: [], origins: [] } },
+    ...byTag,
+  },
+  {
+    name: `${name}-auth`,
+    testMatch: '**/authenticated/**/*.spec.ts',
+    dependencies: ['setup'],
+    use: { ...device, storageState: AUTH_FILE },
+    ...byTag,
+  },
+  {
+    name: `${name}-session`,
+    testMatch: '**/session/**/*.spec.ts',
+    dependencies: [`${name}-auth`],
+    use: { ...device, storageState: AUTH_FILE },
+    ...byTag,
+  },
+]);
+
+/**
+ * Mobile is a project of its own (not test.use overrides inside a spec): Firefox does not
+ * support isMobile, so mobile runs on real Chromium (Pixel 5) and WebKit (iPhone 12) engines.
+ */
+const mobileProjects = [
+  { name: 'mobile-chrome', device: devices['Pixel 5'] },
+  { name: 'mobile-safari', device: devices['iPhone 12'] },
+].map(({ name, device }) => ({
+  name,
+  testMatch: '**/mobile/**/*.spec.ts',
+  dependencies: ['setup'],
+  use: { ...device, storageState: AUTH_FILE },
+  ...byTag,
+}));
+
 export default defineConfig({
   testDir: './tests',
-  /* Run tests in files in parallel */
   fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  // CI: inline annotations on the PR plus the HTML report that gets published to GitHub Pages
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'html',
   use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
     baseURL: 'https://www.saucedemo.com',
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
 
-  /* Configure projects for major browsers */
   projects: [
-    // 1. Projeto de Setup (SÓ roda os arquivos .setup.ts)
-    { 
-      name: 'setup', 
-      testMatch: /.*\.setup\.ts/ 
-    },
-
-    // 2. Projeto de Teste (SÓ roda os arquivos .spec.ts)
-    {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json',
-      },
-      dependencies: ['setup'], // Aqui diz que o 'setup' é pré-requisito
-      testMatch: /.*\.spec\.ts/, // Garante que não vai rodar o setup aqui dentro de novo
-    },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        storageState: 'playwright/.auth/user.json',
-      },
-      dependencies: ['setup'],
-      testMatch: /.*\.spec\.ts/,
-    },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-        storageState: 'playwright/.auth/user.json',
-      },
-      dependencies: ['setup'],
-      testMatch: /.*\.spec\.ts/,
-    },
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    // Logs in once and saves the session that every "-auth", "-session" and "mobile-*" project reuses
+    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    ...desktopProjects,
+    ...mobileProjects,
   ],
-
-  /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
 });

@@ -13,10 +13,11 @@ export class InventoryPage extends BasePage {
   readonly allItemsSidebarLink: Locator;
   readonly resetAppStateSidebarLink: Locator;
   readonly aboutSidebarLink: Locator;
-  readonly twitterLink: Locator;
+  readonly xLink: Locator;
   readonly facebookLink: Locator;
   readonly linkedinLink: Locator;
   readonly productImages: Locator;
+  readonly inventoryItems: Locator;
   readonly cartBadge: Locator;
 
   constructor(page: Page) {
@@ -28,10 +29,11 @@ export class InventoryPage extends BasePage {
     this.allItemsSidebarLink = page.locator('[data-test="inventory-sidebar-link"]');
     this.resetAppStateSidebarLink = page.locator('[data-test="reset-sidebar-link"]');
     this.aboutSidebarLink = page.locator('[data-test="about-sidebar-link"]');
-    this.twitterLink = page.locator('[data-test="social-twitter"]');
+    this.xLink = page.locator('[data-test="social-x"]');
     this.facebookLink = page.locator('[data-test="social-facebook"]');
     this.linkedinLink = page.locator('[data-test="social-linkedin"]');
     this.productImages = page.locator('.inventory_item_img img');
+    this.inventoryItems = page.locator('[data-test="inventory-item"]');
     this.cartBadge = page.locator('[data-test="shopping-cart-badge"]');
   }
 
@@ -51,6 +53,10 @@ export class InventoryPage extends BasePage {
     await this.page.getByText(itemName, { exact: true }).click();
   }
 
+  async sortBy(option: 'az' | 'za' | 'lohi' | 'hilo') {
+    await this.sortDropdown.selectOption(option);
+  }
+
   async filterByPriceLowToHigh() {
     // .selectOption() interacts with type <select> elements
     await this.sortDropdown.selectOption('lohi');
@@ -64,12 +70,20 @@ export class InventoryPage extends BasePage {
     await this.sortDropdown.selectOption('za');
   }
 
+  // The route changes to /inventory.html before the list renders, so anything that reads the
+  // list must wait for it first (performance_glitch_user delays this render by ~5s)
+  async waitForInventoryToLoad(timeout?: number) {
+    await this.inventoryItems.first().waitFor({ timeout });
+  }
+
   async getInventoryPrices(): Promise<number[]> {
+    await this.waitForInventoryToLoad();
     const priceStrings = await this.page.locator('.inventory_item_price').allTextContents();
     return priceStrings.map(price => parseFloat(price.replace('$', '')));
   }
 
   async getInventoryNames(): Promise<string[]> {
+    await this.waitForInventoryToLoad();
     return this.page.locator('.inventory_item_name').allTextContents();
   }
 
