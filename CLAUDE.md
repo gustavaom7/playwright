@@ -17,9 +17,11 @@ npx playwright test --headed      # run with a visible browser
 npx playwright test --ui          # run in Playwright's UI mode
 npx playwright test --debug       # step through with the inspector
 
-npx playwright test tests/saucedemo.spec.ts        # run a single file
+npx playwright test tests/authenticated/cart-and-checkout.spec.ts  # run a single file
 npx playwright test -g "3rd test"                  # run tests matching a title
-npx playwright test --project=chromium              # run a specific project only
+npx playwright test --project=chromium-auth         # run a specific project only
+TAG=@smoke npx playwright test                       # filter by tag (env var, NOT --grep: see Architecture)
+SEM_TAG=@slow npx playwright test                    # everything except a tag
 
 npx playwright show-report        # open the last HTML report
 ```
@@ -32,14 +34,21 @@ There is no lint, typecheck, or build script defined in `package.json` — `scri
 
 ## Architecture
 
-- `playwright.config.ts` defines two projects with a dependency chain:
-  - `setup` — matches `*.setup.ts` files only, runs first.
-  - `chromium` — matches `*.spec.ts` files only, depends on `setup`, and reuses the auth state saved to `playwright/.auth/user.json` via `storageState`.
-  - Mobile/branded-browser projects are present but commented out; mobile behavior is instead tested via `test.use({ viewport, userAgent })` overrides inside spec files (see `Mobile Responsiveness` describe block in `tests/saucedemo.spec.ts`).
-- `tests/auth.setup.ts` is the setup project: it logs into SauceDemo as `standard_user` and writes storage state (cookies/localStorage) to `playwright/.auth/user.json`, which every `chromium`-project test then starts from (pre-authenticated). Tests that need a logged-out state must explicitly clear cookies/localStorage first (see the `locked_out_user` test in `saucedemo.spec.ts`).
+- `playwright.config.ts` builds projects by *nature of scenario*, and each spec lives in the matching `tests/` subfolder (selected by `testMatch` glob):
+  - `setup` — matches `*.setup.ts` only; logs in once and saves `playwright/.auth/user.json`.
+  - `<browser>-public` (`tests/public/`) — anonymous scenarios (login, seeded-user bugs in `quirks.spec.ts`); empty `storageState`, so no manual cookie clearing is needed.
+  - `<browser>-auth` (`tests/authenticated/`) — reuse the saved `standard_user` session, parallel.
+  - `<browser>-session` (`tests/session/`) — logout; depends on `<browser>-auth` so it never races with authenticated tests.
+  - `mobile-chrome` (Pixel 5) / `mobile-safari` (iPhone 12) (`tests/mobile/`) — real mobile emulation; NOT Firefox, which rejects `isMobile`.
+  - `<browser>` is chromium, firefox and webkit.
+  - **Tag filtering** goes through `TAG` / `SEM_TAG` env vars spread into every project except `setup`. The CLI `--grep` does not apply to dependency projects, so it would drag the whole suite along.
+- `tests/auth.setup.ts` logs into SauceDemo as `standard_user` via the UI (SauceDemo has no login API) and writes the storage state that the `-auth`, `-session` and `mobile-*` projects start from.
+- SauceDemo is a SPA: the route changes **before** the view renders. Locators shared across views (`inventory-item-name`) are scoped to their container (`cart-list`, `.inventory_details_container`), and reading the inventory list goes through `InventoryPage.waitForInventoryToLoad()`. An unscoped or unsynchronized read races with the route change.
 - `pages/` implements a Page Object Model:
   - `pages/base.ts` — `BasePage` holds the `Page` instance and a generic `navigate(url)` helper. All page objects extend this.
   - `pages/SauceDemo.ts` — `SauceDemo extends BasePage`, encapsulating locators (by `data-test` attribute where possible) and higher-level actions/assertions (sign in, add to cart, checkout flow, price sorting, etc.) used by the specs. Add new SauceDemo interactions here rather than inlining locators in test files.
-- `tests/saucedemo.spec.ts` contains two `test.describe` blocks: standard desktop flows, and a `Mobile Responsiveness` block that overrides viewport/userAgent to emulate an iPhone 12.
-- `fixtures/` and `utils/` exist but are currently empty — intended locations for shared test fixtures and helper utilities respectively.
+- `tests/` is split by scenario nature (`public/`, `authenticated/`, `session/`, `mobile/`); titles are descriptive and tagged (`@smoke`, `@quirk`, `@slow`).
+- `fixtures/` holds the page-object fixtures and test data. `utils/a11y.ts` runs axe audits (gate: `A11Y_MAX`, default 0, JSON attached to the report); `utils/budgets.ts` holds performance budgets named by intent, scaled by `TIMEOUT_FACTOR`.
+- Extra tags beyond `@smoke`/`@quirk`/`@slow`: `@network`, `@a11y`, `@perf`. Sort, invalid-login and checkout-validation tests are data-driven from tables at the top of/inside their spec.
+- SauceDemo serves deep links (`/inventory.html`) with HTTP 404 while still rendering the app; document requests and the matching console message are excluded from failed-request checks, and a `@quirk` test pins the behavior.
 - CI (`.github/workflows/playwright.yml`) runs on push/PR to `main`/`master`: installs deps, installs browsers, runs `npx playwright test`, and uploads the HTML report as an artifact.

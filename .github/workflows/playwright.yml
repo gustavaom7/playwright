@@ -4,6 +4,16 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  schedule:
+    # Nightly full run across every browser and mobile project
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+# One deploy at a time; a newer run supersedes a queued older one
+concurrency:
+  group: playwright-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     timeout-minutes: 60
@@ -34,7 +44,12 @@ jobs:
     - name: Install Playwright OS dependencies
       if: steps.playwright-cache.outputs.cache-hit == 'true'
       run: npx playwright install-deps
-    - name: Run Playwright tests
+    # Push/PR: Chromium + Chrome mobile for a fast signal. Nightly/manual: every project.
+    - name: Run Playwright tests (Chromium)
+      if: github.event_name == 'push' || github.event_name == 'pull_request'
+      run: npx playwright test --project=chromium-public --project=chromium-auth --project=chromium-session --project=mobile-chrome
+    - name: Run Playwright tests (all browsers)
+      if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
       run: npm test
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
@@ -42,3 +57,23 @@ jobs:
         name: playwright-report
         path: playwright-report/
         retention-days: 30
+    # Only main publishes: PRs must not overwrite the public report
+    - uses: actions/upload-pages-artifact@v3
+      if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+      with:
+        path: playwright-report/
+
+  deploy-report:
+    needs: test
+    if: ${{ !cancelled() && needs.test.result != 'skipped' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Deploy report to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
