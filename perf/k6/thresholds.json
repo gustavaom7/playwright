@@ -1,0 +1,5 @@
+{
+  "browser_web_vital_lcp": { "stat": "p(90)", "max": 2500, "unit": "ms", "label": "Largest Contentful Paint" },
+  "browser_web_vital_fcp": { "stat": "p(90)", "max": 1800, "unit": "ms", "label": "First Contentful Paint" },
+  "browser_web_vital_cls": { "stat": "p(90)", "max": 0.1, "unit": "", "label": "Cumulative Layout Shift" }
+}

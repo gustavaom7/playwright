@@ -18,6 +18,9 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    env:
+      # Optional. Without this secret the triage step still runs, it just does not post to Slack.
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -63,6 +66,21 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+      # Automated defect triage: groups failures across browsers, classifies and ranks them,
+      # and writes Jira-ready bug drafts. Runs even when the tests failed (that is the point).
+      - name: Triage failures into bug drafts
+        if: ${{ !cancelled() }}
+        run: npx tsx scripts/triage-failures.ts | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: bug-report-drafts
+          path: bug-reports/
+          retention-days: 30
+      - name: Notify Slack (failures, and every nightly run)
+        if: ${{ env.SLACK_WEBHOOK_URL != '' && hashFiles('bug-reports/slack-payload.json') != '' && (failure() || github.event_name == 'schedule') }}
+        run: |
+          curl -sS -X POST -H 'Content-type: application/json' --data @bug-reports/slack-payload.json "$SLACK_WEBHOOK_URL"
       # Only main publishes: PRs must not overwrite the public report
       - uses: actions/upload-pages-artifact@v3
         if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}

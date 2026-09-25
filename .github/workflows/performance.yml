@@ -1,0 +1,59 @@
+name: Performance (k6)
+
+on:
+  schedule:
+    # Daily, after the nightly Playwright run
+    - cron: '30 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: performance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  k6-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Optional. Without this secret the job still runs, it just does not post to Slack.
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 browser test
+        id: k6
+        # Keep going on a breach: the summary and the Slack message must still be produced
+        continue-on-error: true
+        env:
+          K6_BROWSER_HEADLESS: 'true'
+        run: k6 run perf/k6/inventory-browser.js --summary-export=perf/k6/summary.json
+
+      - name: Summarize against the shared limits
+        id: summary
+        continue-on-error: true
+        shell: bash
+        run: npx tsx scripts/k6-summary.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Slack
+        if: ${{ env.SLACK_WEBHOOK_URL != '' && hashFiles('perf/k6/slack-payload.json') != '' }}
+        run: |
+          curl -sS -X POST -H 'Content-type: application/json' --data @perf/k6/slack-payload.json "$SLACK_WEBHOOK_URL"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: k6-summary
+          path: |
+            perf/k6/summary.json
+            perf/k6/summary.md
+          retention-days: 30
+
+      - name: Fail the job when a limit was breached
+        if: ${{ steps.k6.outcome == 'failure' || steps.summary.outcome == 'failure' }}
+        run: exit 1
