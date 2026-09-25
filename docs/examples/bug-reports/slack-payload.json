@@ -1,0 +1,3 @@
+{
+  "text": ":rotating_light: Playwright triage: 4 defect(s) (1 Critical, 2 Medium, 1 Low) in 8 tests.\n- BUG-001 [Critical] removing an item updates the cart badge\n- BUG-002 [Medium] inventory page has no WCAG violations\n- BUG-003 [Medium] the inventory page loads within its time budget\n- BUG-004 [Low] sorting by price low to high orders the products"
+}

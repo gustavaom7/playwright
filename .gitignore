@@ -7,3 +7,8 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 /.playwright-mcp/
+.DS_Store
+/bug-reports/
+/perf/k6/summary.json
+/perf/k6/summary.md
+/perf/k6/slack-payload.json

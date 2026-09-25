@@ -15,6 +15,15 @@ module.exports = [
     },
     rules: js.configs.recommended.rules,
   },
+  {
+    // k6 scripts run in k6's own JS runtime (ES modules, __ENV, open), not in Node
+    files: ['perf/**/*.js'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: { __ENV: 'readonly', open: 'readonly' },
+    },
+    rules: js.configs.recommended.rules,
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended.map((config) => ({
     ...config,

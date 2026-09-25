@@ -1,15 +1,29 @@
 {
-  "name": "interview-playwright-sandbox",
+  "name": "playwright-typescript-e2e-framework",
   "version": "1.0.0",
-  "description": "",
+  "description": "Playwright + TypeScript E2E framework with AI-driven test generation (Playwright MCP + Claude Code), k6 performance checks and automated defect triage.",
   "main": "index.js",
   "scripts": {
     "test": "playwright test",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "triage": "tsx scripts/triage-failures.ts",
+    "triage:example": "tsx scripts/triage-failures.ts scripts/__fixtures__/sample-results.json bug-reports",
+    "k6:summary": "tsx scripts/k6-summary.ts"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "playwright",
+    "typescript",
+    "e2e-testing",
+    "test-automation",
+    "sdet",
+    "mcp",
+    "claude-code",
+    "agentic-testing",
+    "k6",
+    "github-actions"
+  ],
+  "author": "Gustavo Mesquita",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
@@ -20,6 +34,7 @@
     "eslint": "^10.7.0",
     "eslint-plugin-playwright": "^2.10.5",
     "globals": "^17.7.0",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.64.0"
   }

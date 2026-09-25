@@ -3,8 +3,9 @@
 ![Playwright Tests](https://github.com/gustavaom7/playwright/actions/workflows/playwright.yml/badge.svg?branch=main)
 [![Quality](https://img.shields.io/badge/Quality-Assurance-orange)](https://github.com/gustavaom7/playwright)
 [![MCP](https://img.shields.io/badge/MCP-Playwright-blueviolet)](https://github.com/gustavaom7/playwright/blob/main/.mcp.json)
+![Performance (k6)](https://github.com/gustavaom7/playwright/actions/workflows/performance.yml/badge.svg?branch=main)
 
-Professional E2E automation suite developed with **Playwright** and **TypeScript** against [saucedemo.com](https://www.saucedemo.com/), extended with **Model Context Protocol (MCP)** integration for AI-assisted, locator-accurate test authoring.
+Professional E2E automation suite developed with **Playwright** and **TypeScript** against [saucedemo.com](https://www.saucedemo.com/), extended with an **AI-driven workflow** (Playwright MCP + Claude Code skills) for test generation and defect triage, **k6** browser performance checks and **Slack** reporting. See [docs/ai-workflow.md](docs/ai-workflow.md).
 
 ---
 
@@ -26,10 +27,18 @@ Professional E2E automation suite developed with **Playwright** and **TypeScript
 * **Performance budgets:** Navigation Timing of the inventory page against budgets named by intent (`utils/budgets.ts`), scalable with `TIMEOUT_FACTOR` for slower environments. Timings are attached to the report even when passing.
 * **Visual regression (Chromium only, baseline not yet enabled):** `tests/authenticated/visual-regression.spec.ts` uses Playwright's built-in `toHaveScreenshot()` — no external service, no account, no extra dependency — on 5 flows (inventory, sorted inventory, cart, checkout step one, checkout complete). See "Visual regression" under CI/CD Workflow for why the baseline isn't committed yet and how to turn it on.
 
-### 🤖 AI-Assisted Exploration (MCP)
-* **Model Context Protocol integration:** `.mcp.json` wires up the official `@playwright/mcp` server, giving an MCP-compatible client (e.g. Claude Code) live control of a real browser against saucedemo.com.
-* **Locator discovery workflow:** flows are explored interactively — navigating, taking accessibility snapshots, clicking/typing — to find the exact `[data-test="..."]` locator a new Page Object method should use, instead of guessing selectors blind.
-* **Human-in-the-loop authoring:** MCP drives discovery, not code generation — the resulting page-object methods and test code are still written deliberately from what the session reveals.
+### 🤖 AI-Driven Testing (MCP + Claude Code)
+* **Playwright MCP:** `.mcp.json` wires up the official `@playwright/mcp` server, giving Claude Code live control of a real browser against saucedemo.com.
+* **AI-driven test generation:** the `explore-and-generate-tests` skill (`.claude/skills/`) explores a page through MCP, writes a page map (`docs/page-maps/`), then drafts a Page Object and spec that follow this repo's conventions and runs lint, typecheck and the new spec before reporting.
+* **Human in the loop:** generated tests are drafts. They are reviewed before merge, and anything the agent could not confirm is marked `test.fixme` instead of guessed.
+* **Automated defect triage:** `scripts/triage-failures.ts` reads the Playwright JSON report, merges the same failure across browsers, classifies it (functional, accessibility, performance, visual, network, flaky), ranks it with an explicit severity rubric, flags likely common root causes and writes Jira-ready drafts. It is deterministic on purpose, so it is reproducible and testable.
+* **AI-assisted defect management:** the `bug-report` skill turns those drafts into final reports: it confirms the bug reproduces, describes the evidence and rewrites the steps as user-level steps.
+* **See it without running anything:** `npm run triage:example` and [`docs/examples/bug-reports/`](docs/examples/bug-reports/) (generated from a synthetic fixture).
+
+### ⚡ Performance (k6) and Slack
+* **k6 browser test:** `perf/k6/inventory-browser.js` measures Core Web Vitals (LCP, FCP, CLS) of the login-to-inventory flow in headless Chromium and fails when a limit in `perf/k6/thresholds.json` is breached.
+* **One source of truth:** the same thresholds file drives the k6 gate and the summary/Slack report, so they can never disagree.
+* **Slack:** the performance workflow and the failure triage post a summary through an optional `SLACK_WEBHOOK_URL` secret; without it they just skip the notification.
 
 ### ⚙️ DevOps & CI/CD
 * **GitHub Actions:** lint, typecheck, and the full cross-browser regression suite run on every push/PR.
@@ -37,6 +46,8 @@ Professional E2E automation suite developed with **Playwright** and **TypeScript
 * **Live report on GitHub Pages:** the HTML report of the latest `main` run is published at https://gustavaom7.github.io/playwright/ (requires Pages source set to *GitHub Actions*).
 * **Cost-aware matrix:** push/PR run Chromium + Chrome mobile for a fast signal; a nightly schedule (and manual dispatch) runs every browser and mobile project.
 * **Automated Reporting:** HTML report uploaded as a build artifact on every run, even on failure.
+* **Failure triage in CI:** every run turns failures into ranked bug drafts (uploaded as the `bug-report-drafts` artifact and written to the job summary).
+* **Scheduled performance run:** `.github/workflows/performance.yml` runs the k6 browser test daily and can be started manually.
 
 ---
 
@@ -44,8 +55,12 @@ Professional E2E automation suite developed with **Playwright** and **TypeScript
 
 ```text
 playwright/
-├── .github/workflows/ # CI/CD pipeline (playwright.yml, visual-regression.yml)
+├── .github/workflows/ # CI/CD (playwright.yml, visual-regression.yml, performance.yml)
+├── .claude/skills/ # Claude Code skills: explore-and-generate-tests, bug-report
 ├── .mcp.json # Playwright MCP server config
+├── docs/ # ai-workflow.md and example bug reports
+├── perf/k6/ # k6 browser test and shared thresholds
+├── scripts/ # triage-failures.ts, k6-summary.ts and a sample fixture
 ├── pages/ # Page Object Model
 │ ├── base.ts # Shared navigate() helper
 │ ├── LoginPage.ts
@@ -102,7 +117,22 @@ npx playwright install --with-deps
 
 3. **Exploring with MCP**
 
-`.mcp.json` already configures the `@playwright/mcp` server — any MCP-compatible client (Claude Code, etc.) can drive a live browser against saucedemo.com to explore flows and discover `data-test` locators before a test is ever written.
+`.mcp.json` already configures the `@playwright/mcp` server. In Claude Code, ask for the `explore-and-generate-tests` skill on a page or flow: it explores, maps and drafts the tests for review.
+
+4. **Triage failures**
+
+```bash
+npm test                  # writes test-results/results.json
+npm run triage            # bug-reports/BUG-*.md, summary.md, slack-payload.json
+npm run triage:example    # same, from a committed sample report
+```
+
+5. **Performance (needs [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/) and Chrome)**
+
+```bash
+k6 run perf/k6/inventory-browser.js --summary-export=perf/k6/summary.json
+npm run k6:summary
+```
 
 ## 📊 CI/CD Workflow
 
@@ -130,12 +160,12 @@ To turn visual regression on for real:
 
 ## 👤 Author
 
-**Gustavo Mesquita** - QA Engineer
+**Gustavo Mesquita** - Senior QA Automation Engineer (SDET)
 
 - [LinkedIn](https://www.linkedin.com/in/qa-gustavo-mesquita/)
 - [GitHub](https://github.com/gustavaom7)
 
-_Developed with automation and AI-assisted exploration via MCP._
+_Built with Playwright, TypeScript and AI agents (Playwright MCP + Claude Code)._
 
 ---
 
@@ -149,3 +179,6 @@ _Developed with automation and AI-assisted exploration via MCP._
 * **Firefox has no mobile emulation** (`isMobile` is unsupported), so mobile runs on Chromium (Pixel 5) and WebKit (iPhone 12).
 * **Quirk tests pass while the bug exists.** `tests/public/quirks.spec.ts` pins documented SauceDemo bugs; a failing quirk test means the site fixed something, not that the suite broke.
 * **Visual regression has tests, but no reviewed baseline yet**, so it doesn't gate CI. See "Visual regression" above for exactly why and how to change that.
+* **The k6 workflow has not run in CI yet.** Run it once (Actions -> Performance (k6) -> Run workflow) and tune `perf/k6/thresholds.json` to what the site really delivers before trusting the gate.
+* **The skills are instructions, not guarantees.** Generated tests and bug reports depend on the model and are drafts until reviewed.
+* **Example bug reports come from a synthetic fixture**, not from real failures of the suite.

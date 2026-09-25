@@ -1,0 +1,201 @@
+{
+  "suites": [
+    {
+      "title": "cart-and-checkout.spec.ts",
+      "file": "authenticated/cart-and-checkout.spec.ts",
+      "specs": [
+        {
+          "title": "removing an item updates the cart badge",
+          "file": "authenticated/cart-and-checkout.spec.ts",
+          "line": 42,
+          "tags": [
+            "smoke"
+          ],
+          "ok": false,
+          "tests": [
+            {
+              "projectName": "chromium-auth",
+              "status": "unexpected",
+              "results": [
+                {
+                  "status": "failed",
+                  "retry": 0,
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "test-results/cart-chromium/screenshot.png"
+                    }
+                  ],
+                  "error": {
+                    "message": "\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected string: \"1\"\nReceived string: \"2\"\nTimeout: 5000ms"
+                  }
+                }
+              ]
+            },
+            {
+              "projectName": "firefox-auth",
+              "status": "unexpected",
+              "results": [
+                {
+                  "status": "failed",
+                  "retry": 0,
+                  "attachments": [],
+                  "error": {
+                    "message": "\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected string: \"1\"\nReceived string: \"2\"\nTimeout: 5000ms"
+                  }
+                }
+              ]
+            },
+            {
+              "projectName": "webkit-auth",
+              "status": "unexpected",
+              "results": [
+                {
+                  "status": "failed",
+                  "retry": 0,
+                  "attachments": [],
+                  "error": {
+                    "message": "\u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected string: \"1\"\nReceived string: \"2\"\nTimeout: 5000ms"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "accessibility.spec.ts",
+      "file": "authenticated/accessibility.spec.ts",
+      "specs": [
+        {
+          "title": "inventory page has no WCAG violations",
+          "file": "authenticated/accessibility.spec.ts",
+          "line": 12,
+          "tags": [
+            "a11y"
+          ],
+          "ok": false,
+          "tests": [
+            {
+              "projectName": "chromium-auth",
+              "status": "unexpected",
+              "results": [
+                {
+                  "status": "failed",
+                  "retry": 0,
+                  "attachments": [],
+                  "error": {
+                    "message": "expect(received).toBeLessThanOrEqual(expected)\n\nExpected: <= 0\nReceived: 3\n\nviolations: color-contrast, label"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "performance.spec.ts",
+      "file": "authenticated/performance.spec.ts",
+      "specs": [
+        {
+          "title": "the inventory page loads within its time budget",
+          "file": "authenticated/performance.spec.ts",
+          "line": 6,
+          "tags": [
+            "perf"
+          ],
+          "ok": false,
+          "tests": [
+            {
+              "projectName": "chromium-auth",
+              "status": "unexpected",
+              "results": [
+                {
+                  "status": "failed",
+                  "retry": 0,
+                  "attachments": [],
+                  "error": {
+                    "message": "expect(received).toBeLessThan(expected)\n\nExpected: < 3000\nReceived: 3412"
+                  }
+                }
+              ]
+            },
+            {
+              "projectName": "mobile-chrome",
+              "status": "unexpected",
+              "results": [
+                {
+                  "status": "failed",
+                  "retry": 0,
+                  "attachments": [],
+                  "error": {
+                    "message": "expect(received).toBeLessThan(expected)\n\nExpected: < 5000\nReceived: 5120"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "catalog.spec.ts",
+      "file": "authenticated/catalog.spec.ts",
+      "specs": [
+        {
+          "title": "sorting by price low to high orders the products",
+          "file": "authenticated/catalog.spec.ts",
+          "line": 30,
+          "tags": [
+            "smoke"
+          ],
+          "ok": false,
+          "tests": [
+            {
+              "projectName": "chromium-auth",
+              "status": "flaky",
+              "results": [
+                {
+                  "status": "timedOut",
+                  "retry": 0,
+                  "attachments": [],
+                  "error": {
+                    "message": "Timeout 5000ms exceeded while waiting on the predicate"
+                  }
+                },
+                {
+                  "status": "passed",
+                  "retry": 1,
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "product details show the price",
+          "file": "authenticated/catalog.spec.ts",
+          "line": 55,
+          "tags": [],
+          "ok": false,
+          "tests": [
+            {
+              "projectName": "chromium-auth",
+              "status": "expected",
+              "results": [
+                {
+                  "status": "passed",
+                  "retry": 0,
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
