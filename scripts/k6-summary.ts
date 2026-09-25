@@ -21,8 +21,10 @@ const statsOf = (metric: MetricStats | { values: MetricStats } | undefined): Met
   metric && 'values' in metric ? (metric.values as MetricStats) : (metric as MetricStats | undefined);
 
 export function evaluate(summary: Summary, limits: Record<string, Limit>): Row[] {
+  // If the browser never started, k6 exports the web vitals as 0: no iteration means no measurement
+  const ran = (statsOf(summary.metrics.iterations)?.count ?? 0) > 0;
   return Object.entries(limits).map(([metric, limit]) => {
-    const value = statsOf(summary.metrics[metric])?.[limit.stat];
+    const value = ran ? statsOf(summary.metrics[metric])?.[limit.stat] : undefined;
     return {
       metric,
       label: limit.label,

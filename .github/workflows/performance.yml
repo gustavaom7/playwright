@@ -32,6 +32,8 @@ jobs:
         continue-on-error: true
         env:
           K6_BROWSER_HEADLESS: 'true'
+          # Chrome aborts on launch in the runner without this (sandbox is restricted on ubuntu-latest)
+          K6_BROWSER_ARGS: 'no-sandbox'
         run: k6 run perf/k6/inventory-browser.js --summary-export=perf/k6/summary.json
 
       - name: Summarize against the shared limits
