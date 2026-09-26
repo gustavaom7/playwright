@@ -1,9 +1,9 @@
 # 🧪 Advanced Quality Architecture - Playwright & MCP
 
-![Playwright Tests](https://github.com/gustavaom7/playwright/actions/workflows/playwright.yml/badge.svg?branch=main)
-[![Quality](https://img.shields.io/badge/Quality-Assurance-orange)](https://github.com/gustavaom7/playwright)
-[![MCP](https://img.shields.io/badge/MCP-Playwright-blueviolet)](https://github.com/gustavaom7/playwright/blob/main/.mcp.json)
-![Performance (k6)](https://github.com/gustavaom7/playwright/actions/workflows/performance.yml/badge.svg?branch=main)
+![Playwright Tests](https://github.com/gustavaom7/playwright-typescript-e2e-framework/actions/workflows/playwright.yml/badge.svg?branch=main)
+[![Quality](https://img.shields.io/badge/Quality-Assurance-orange)](https://github.com/gustavaom7/playwright-typescript-e2e-framework)
+[![MCP](https://img.shields.io/badge/MCP-Playwright-blueviolet)](https://github.com/gustavaom7/playwright-typescript-e2e-framework/blob/main/.mcp.json)
+![Performance (k6)](https://github.com/gustavaom7/playwright-typescript-e2e-framework/actions/workflows/performance.yml/badge.svg?branch=main)
 
 Professional E2E automation suite developed with **Playwright** and **TypeScript** against [saucedemo.com](https://www.saucedemo.com/), extended with an **AI-driven workflow** (Playwright MCP + Claude Code skills) for test generation and defect triage, **k6** browser performance checks and **Slack** reporting. See [docs/ai-workflow.md](docs/ai-workflow.md).
 
@@ -43,7 +43,7 @@ Professional E2E automation suite developed with **Playwright** and **TypeScript
 ### ⚙️ DevOps & CI/CD
 * **GitHub Actions:** lint, typecheck, and the full cross-browser regression suite run on every push/PR.
 * **Dependency caching:** Playwright browser binaries are cached by version to speed up runs.
-* **Live report on GitHub Pages:** the HTML report of the latest `main` run is published at https://gustavaom7.github.io/playwright/ (requires Pages source set to *GitHub Actions*).
+* **Live report on GitHub Pages:** the HTML report of the latest `main` run is published at https://gustavaom7.github.io/playwright-typescript-e2e-framework/ (requires Pages source set to *GitHub Actions*).
 * **Cost-aware matrix:** push/PR run Chromium + Chrome mobile for a fast signal; a nightly schedule (and manual dispatch) runs every browser and mobile project.
 * **Automated Reporting:** HTML report uploaded as a build artifact on every run, even on failure.
 * **Failure triage in CI:** every run turns failures into ranked bug drafts (uploaded as the `bug-report-drafts` artifact and written to the job summary).
